@@ -361,98 +361,6 @@ add_bar_labels(ax, fmt="{:.1f}")
 save_plot("14_доля_CTA_по_платформам.png")
 cta_share.to_csv(TABLES_DIR / "14_доля_CTA_по_платформам.csv", encoding="utf-8-sig")
 
-# 15 — среднее число подписчиков по типу успеха
-success_exploded = explode_category(df, "Тип успеха")
-subs_by_success = success_exploded.groupby("Значение")["Подписчики"].mean().sort_values(ascending=False)
-fig, ax = plt.subplots(figsize=(10, 6))
-subs_by_success.plot(kind="bar", ax=ax)
-ax.set_title("15 Среднее число подписчиков по типу успеха")
-ax.set_xlabel("")
-ax.set_ylabel("Среднее число подписчиков")
-ax.set_xticklabels(ax.get_xticklabels(), rotation=35, ha="right")
-add_bar_labels(ax, fmt="{:.0f}")
-save_plot("15_подписчики_по_типу_успеха.png")
-subs_by_success.to_csv(TABLES_DIR / "15_подписчики_по_типу_успеха.csv", encoding="utf-8-sig")
-
-# 16 — среднее число подписчиков по образу успеха
-image_exploded = explode_category(df, "Образ успеха")
-subs_by_image = image_exploded.groupby("Значение")["Подписчики"].mean().sort_values(ascending=False)
-fig, ax = plt.subplots(figsize=(11, 6))
-subs_by_image.plot(kind="bar", ax=ax)
-ax.set_title("16 Среднее число подписчиков по образу успеха")
-ax.set_xlabel("")
-ax.set_ylabel("Среднее число подписчиков")
-ax.set_xticklabels(ax.get_xticklabels(), rotation=35, ha="right")
-add_bar_labels(ax, fmt="{:.0f}")
-save_plot("16_подписчики_по_образу_успеха.png")
-subs_by_image.to_csv(TABLES_DIR / "16_подписчики_по_образу_успеха.csv", encoding="utf-8-sig")
-
-# 17 — подписчики и наличие триггеров: возможный парадокс популярности
-subs_by_trigger = df.groupby("Есть триггер")["Подписчики"].mean()
-subs_by_trigger.index = ["Нет триггера" if i == 0 else "Есть триггер" for i in subs_by_trigger.index]
-fig, ax = plt.subplots(figsize=(8, 6))
-subs_by_trigger.plot(kind="bar", ax=ax)
-ax.set_title("17 Среднее число подписчиков: есть ли триггер")
-ax.set_xlabel("")
-ax.set_ylabel("Среднее число подписчиков")
-ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-add_bar_labels(ax, fmt="{:.0f}")
-save_plot("17_подписчики_и_наличие_триггеров.png")
-subs_by_trigger.to_csv(TABLES_DIR / "17_подписчики_и_наличие_триггеров.csv", encoding="utf-8-sig")
-
-# 18 — средняя длина текста по платформам
-text_len = df.groupby("Платформа")["Длина текста"].mean().reindex(["TG", "TikTok"])
-fig, ax = plt.subplots(figsize=(8, 6))
-text_len.plot(kind="bar", ax=ax)
-ax.set_title("18 Средняя длина текста по платформам")
-ax.set_xlabel("")
-ax.set_ylabel("Средняя длина текста, символы")
-ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-add_bar_labels(ax, fmt="{:.0f}")
-save_plot("18_средняя_длина_текста_по_платформам.png")
-text_len.to_csv(TABLES_DIR / "18_средняя_длина_текста_по_платформам.csv", encoding="utf-8-sig")
-
-# 19 — топ каналов по подписчикам и доля публикаций с триггерами
-channel_stats = (
-    df.groupby(["Платформа", "Название канала"], as_index=False)
-    .agg(
-        Подписчики=("Подписчики", "max"),
-        Доля_триггеров=("Есть триггер", "mean"),
-        Доля_CTA=("Есть CTA", "mean"),
-        Средняя_длина_текста=("Длина текста", "mean"),
-        Количество_публикаций=("Текст", "count"),
-    )
-)
-channel_stats["Доля_триггеров"] *= 100
-channel_stats["Доля_CTA"] *= 100
-channel_stats = channel_stats.sort_values("Подписчики", ascending=False)
-channel_stats.to_csv(TABLES_DIR / "19_статистика_по_каналам.csv", index=False, encoding="utf-8-sig")
-
-plot_data = channel_stats.head(15).sort_values("Подписчики", ascending=True)
-fig, ax = plt.subplots(figsize=(12, 8))
-ax.barh(plot_data["Название канала"], plot_data["Подписчики"])
-ax.set_title("19 Топ каналов по подписчикам")
-ax.set_xlabel("Подписчики")
-ax.set_ylabel("")
-save_plot("19_топ_каналов_по_подписчикам.png")
-
-# 20 — scatter: подписчики × доля триггеров
-fig, ax = plt.subplots(figsize=(10, 7))
-for platform, group in channel_stats.groupby("Платформа"):
-    ax.scatter(group["Подписчики"], group["Доля_триггеров"], label=platform, s=80)
-
-for _, row in channel_stats.iterrows():
-    name = str(row["Название канала"])
-    if len(name) > 22:
-        name = name[:22] + "..."
-    ax.annotate(name, (row["Подписчики"], row["Доля_триггеров"]), fontsize=7, alpha=0.8)
-
-ax.set_title("20 Подписчики и доля публикаций с триггерами")
-ax.set_xlabel("Количество подписчиков")
-ax.set_ylabel("Доля публикаций с триггерами, %")
-ax.legend(title="Платформа")
-save_plot("20_подписчики_x_доля_триггеров.png")
-
 
 # =========================
 # 5. СВОДНЫЙ EXCEL-ОТЧЁТ
@@ -467,8 +375,6 @@ with pd.ExcelWriter(summary_path, engine="openpyxl") as writer:
         freq = exploded["Значение"].value_counts().rename_axis(column).reset_index(name="Частота")
         freq["Процент"] = freq["Частота"] / freq["Частота"].sum() * 100
         freq.to_excel(writer, sheet_name=f"{i:02d}_{column[:20]}", index=False)
-
-    channel_stats.to_excel(writer, sheet_name="Каналы", index=False)
 
 print("Готово!")
 print(f"Графики сохранены в папке: {GRAPHS_DIR}")
